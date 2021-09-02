@@ -17,16 +17,16 @@ import unittest
 import common_functions as common
 
 # General Constants
-FILE_NAME_INPUT = 'Processed Load Estimates_p_non_modified.xlsx'
-FILE_NAME_INPUT2 = 'Processed Load Estimates_p_modified.xlsx'
-FILE_PTH_INPUT = common.get_local_file_path(file_name=FILE_NAME_INPUT)
-FILE_PTH_INPUT2 = common.get_local_file_path(file_name=FILE_NAME_INPUT2)
+FILE_NAME_INPUT_1 = 'Processed Load Estimates_p_non_modified.xlsx'
+FILE_NAME_INPUT_2 = 'Processed Load Estimates_p_modified.xlsx'
+FILE_PTH_INPUT_1 = common.get_local_file_path(file_name=FILE_NAME_INPUT_1)
+FILE_PTH_INPUT_2 = common.get_local_file_path(file_name=FILE_NAME_INPUT_2)
 
-
-FILE_NAME_OUTPUT = 'Example Comparison.xlsx'
-FILE_NAME_OUTPUT2 = 'Example Comparison2.xlsx'
+#
+# FILE_NAME_OUTPUT = 'Example Comparison.xlsx'
+FILE_NAME_OUTPUT = 'Example Comparison2.xlsx'
+# FILE_PTH_OUTPUT = common.get_local_file_path(file_name=FILE_NAME_OUTPUT)
 FILE_PTH_OUTPUT = common.get_local_file_path(file_name=FILE_NAME_OUTPUT)
-FILE_PTH_OUTPUT2 = common.get_local_file_path(file_name=FILE_NAME_OUTPUT2)
 
 # Engine to use when writing excel workbooks (XlsxWriter needed for formatting of tabs)
 excel_engine = 'xlsxwriter'
@@ -126,61 +126,70 @@ def write_dataframe(workbook, df, sheet_name, tab_color=None):
 	return None
 
 
-# Some unit tests
-class UnitTestExample(unittest.TestCase):
+def excel_data_comparison_maker(FILE_NAME_INPUT_1,FILE_NAME_INPUT_2,Bad_Data_Input_Name,Good_Data_Input_Name):
+	"""
+			Function compares two DataFrames of the same size and returns a dataframe of the same dimensions but with only
+			the differences shown.  Keeps values in df2
+		:param pd.DataFrame df1:  DataFrame 1
+		:param pd.DataFrame df2:  DataFrame 2
+		:return (pd.DataFrame, pd.DataFrame.Styled) (df_diff, df2_styled):  Different values between DataFrames and
+																			original dataframe with changes highlighted
+		"""
+	# todo: modify the description
 
-	def setUp(self):
-		""" Some setup for the unittest, for example where the same variable input is used across multiple tests"""
-		self.df_dimensions = 5
+	FILE_PTH_INPUT_1 = common.get_local_file_path(file_name=FILE_NAME_INPUT_1)
+	FILE_PTH_INPUT_2 = common.get_local_file_path(file_name=FILE_NAME_INPUT_2)
+	FILE_PTH_INPUT_Bad_Data = common.get_local_file_path(file_name=Bad_Data_Input_Name)
+	FILE_PTH_INPUT_Good_Data = common.get_local_file_path(file_name=Good_Data_Input_Name)
 
-	def testDataFrameProduction(self):
-		""" Confirms that a DataFrame is produced of the correct dimensions"""
-		test_df = produce_dataframe(dimensions=self.df_dimensions, row_num=3)
+	FILE_NAME_OUTPUT = common.excel_file_names.data_comparison_excel_name
+	FILE_PTH_OUTPUT = common.get_local_file_path(file_name=FILE_NAME_OUTPUT)
 
-		# Confirm the returned type is a DataFrame
-		self.assertEqual(type(test_df), pd.DataFrame)
-		# Confirm the dimensions of the DataFrame are as expected
-		self.assertEqual(test_df.shape, (self.df_dimensions, self.df_dimensions))
-
-	def testDataFrameProduction_Fails(self):
-		""" Confirms that a DataFrame production fails if the input row_num is larger than the dimensions"""
-		with self.assertRaises(ValueError):
-			_ = produce_dataframe(dimensions=self.df_dimensions, row_num=self.df_dimensions + 2)
-
-	def testDataFramesDifferent(self):
-		""" Confirms that two DataFrames with different ids look different"""
-
-		test_df1 = produce_dataframe(dimensions=self.df_dimensions, row_num=2)
-		test_df2 = produce_dataframe(dimensions=self.df_dimensions, row_num=4)
-
-		self.assertFalse(test_df1.equals(test_df2))
-
-		# Retrieve differences
-		test_df_diff, test_df2 = compare_dataframes(df1=test_df1, df2=test_df2)
-
-		# Confirm the same shape as df1
-		self.assertEqual(test_df1.shape, test_df_diff.shape)
+	# Engine to use when writing excel workbooks (XlsxWriter needed for formatting of tabs)
+	excel_engine = 'xlsxwriter'
 
 
-if __name__ == '__main__':
-	# Produce 2 different dataframes with the differences being on the row number
-	df_main = produce_dataframe(dimensions=10, row_num=2)
-	df_modified = produce_dataframe(dimensions=10, row_num=4)
-
-	df_main=common.import_excel(pth_load_est=FILE_PTH_INPUT)
-	df_modified = common.import_excel(pth_load_est=FILE_PTH_INPUT2)
+	df_main=common.import_excel(pth_load_est=FILE_PTH_INPUT_1)
+	df_modified = common.import_excel(pth_load_est=FILE_PTH_INPUT_2)
+	df_bad_data = common.import_excel(pth_load_est=FILE_PTH_INPUT_Bad_Data)
+	df_good_data = common.import_excel(pth_load_est=FILE_PTH_INPUT_Good_Data)
 
 	# Compare DataFrames to get differences and an updated df_modified with cells highlighted
 	df_diff, df_modified_styled = compare_dataframes(df1=df_main, df2=df_modified)
 
 	# Write DataFrames to excel workbook
 	# Create an instance of excel
-	with pd.ExcelWriter(path=FILE_PTH_OUTPUT2, engine=excel_engine) as wkbk:
+	with pd.ExcelWriter(path=FILE_PTH_OUTPUT, engine=excel_engine) as wkbk:
 		# Write main data
 		write_dataframe(workbook=wkbk, df=df_main, sheet_name='Raw Data')
 		# Write modified data
 		write_dataframe(workbook=wkbk, df=df_modified_styled, sheet_name='Modified Data', tab_color='green')
 		# Write difference data
 		write_dataframe(workbook=wkbk, df=df_diff, sheet_name='Difference Data', tab_color='blue')
+		write_dataframe(workbook=wkbk, df=df_bad_data, sheet_name='Bad Data', tab_color='red')
+		write_dataframe(workbook=wkbk, df=df_good_data, sheet_name='Good Data')
+	k=1
+
+
+
+if __name__ == '__main__':
+	# Produce 2 different dataframes with the differences being on the row number
+	#FILE_NAME_OUTPUT = 'Example Comparison2.xlsx'
+	# FILE_PTH_OUTPUT = common.get_local_file_path(file_name=FILE_NAME_OUTPUT)
+	#FILE_PTH_OUTPUT = common.get_local_file_path(file_name=FILE_NAME_OUTPUT)
+	# Engine to use when writing excel workbooks (XlsxWriter needed for formatting of tabs)
+	# FILE_NAME_INPUT_1 = common.excel_file_names.df_raw_excel_name
+	# FILE_NAME_INPUT_2 = common.excel_file_names.df_modified_excel_name
+	# Bad_Data_Input_Name = common.excel_file_names.bad_data_excel_name
+	# FILE_NAME_INPUT_2 = 'Processed Load Estimates_p_modified.xlsx'
+	FILE_NAME_INPUT_1 = common.excel_file_names.df_raw_excel_name
+	FILE_NAME_INPUT_2 = common.excel_file_names.df_modified_excel_name
+	Bad_Data_Input_Name = common.excel_file_names.bad_data_excel_name
+	Good_Data_Input_Name = common.excel_file_names.good_data_excel_name
+
+	excel_data_comparison_maker(FILE_NAME_INPUT_1=FILE_NAME_INPUT_1,FILE_NAME_INPUT_2=FILE_NAME_INPUT_2,\
+								Bad_Data_Input_Name=Bad_Data_Input_Name,Good_Data_Input_Name=Good_Data_Input_Name)
 
 	k=1
+
+
